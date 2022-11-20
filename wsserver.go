@@ -43,6 +43,7 @@ type WSServer struct {
 	TCPAddr        *net.TCPAddr
 	HTTPServer     *http.Server
 	HTTPSServer    *http.Server
+	AuthManager   *AuthManager
 	TCPTimeout     int
 	UDPTimeout     int
 	Path           string
@@ -63,7 +64,7 @@ type WSServer struct {
 }
 
 // NewWSServer.
-func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int, blockDomainList, blockCIDR4List, blockCIDR6List string, updateListInterval int64, blockGeoIP []string) (*WSServer, error) {
+func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int, blockDomainList, blockCIDR4List, blockCIDR6List string, updateListInterval int64, blockGeoIP []string, auth bool) (*WSServer, error) {
 	var taddr *net.TCPAddr
 	var err error
 	if domain == "" {
@@ -93,6 +94,17 @@ func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int
 			return nil, err
 		}
 	}
+
+	var am *AuthManager
+	if auth {
+		log.Println("Auth is enabled")
+		am = NewAuthManager("./auth.json")
+		err = am.Load()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	cs2 := cache.New(cache.NoExpiration, cache.NoExpiration)
 	cs3 := cache.New(cache.NoExpiration, cache.NoExpiration)
 	var lock *sync.RWMutex
@@ -113,6 +125,7 @@ func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int
 		TCPAddr:        taddr,
 		TCPTimeout:     tcpTimeout,
 		UDPTimeout:     udpTimeout,
+		AuthManager:  	am,
 		Path:           path,
 		UDPSrc:         cs2,
 		BlockDomain:    ds,
