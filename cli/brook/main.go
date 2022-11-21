@@ -386,7 +386,7 @@ func main() {
 				if c.String("blockCIDR6List") != "" && !strings.HasPrefix(c.String("blockCIDR6List"), "http://") && !strings.HasPrefix(c.String("blockCIDR6List"), "https://") && !filepath.IsAbs(c.String("blockCIDR6List")) {
 					return errors.New("--blockCIDR6List must be with absolute path")
 				}
-				s, err := brook.NewWSServer(c.String("listen"), c.String("password"), "", c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"))
+				s, err := brook.NewWSServer(c.String("listen"), c.String("password"), "", c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), c.Int("ips"))
 				if err != nil {
 					return err
 				}
@@ -636,7 +636,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				s, err := brook.NewWSServer("", c.String("password"), h, c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"))
+				s, err := brook.NewWSServer("", c.String("password"), h, c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), 0)
 				if err != nil {
 					return err
 				}

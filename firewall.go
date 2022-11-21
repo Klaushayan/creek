@@ -18,6 +18,14 @@ type IP struct {
 	LastConnection  int64
 }
 
+func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
+	return &Firewall{
+		MaxConnections:     maxConnections,
+		BlockPeriod:        blockPeriod,
+		ConnectionCooldown: connectionCooldown,
+	}
+}
+
 func (f *Firewall) IsBlocked(ip string) bool {
 	for _, b := range f.blockedIPs {
 		if b.Address == ip {

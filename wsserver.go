@@ -43,6 +43,8 @@ type WSServer struct {
 	TCPAddr        *net.TCPAddr
 	HTTPServer     *http.Server
 	HTTPSServer    *http.Server
+	Firewall 	   *Firewall
+	MaxConnections int
 	TCPTimeout     int
 	UDPTimeout     int
 	Path           string
@@ -63,7 +65,7 @@ type WSServer struct {
 }
 
 // NewWSServer.
-func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int, blockDomainList, blockCIDR4List, blockCIDR6List string, updateListInterval int64, blockGeoIP []string) (*WSServer, error) {
+func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int, blockDomainList, blockCIDR4List, blockCIDR6List string, updateListInterval int64, blockGeoIP []string, ips int) (*WSServer, error) {
 	var taddr *net.TCPAddr
 	var err error
 	if domain == "" {
@@ -114,6 +116,8 @@ func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int
 		TCPAddr:        taddr,
 		TCPTimeout:     tcpTimeout,
 		UDPTimeout:     udpTimeout,
+		Firewall:       NewFirewall(ips, 1440, 30),
+		MaxConnections: ips,
 		Path:           path,
 		UDPSrc:         cs2,
 		BlockDomain:    ds,
