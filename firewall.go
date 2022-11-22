@@ -1,11 +1,14 @@
 package brook
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 type Firewall struct {
 	MaxConnections     int
-	BlockPeriod        int
-	ConnectionCooldown int
+	BlockPeriod        int64
+	ConnectionCooldown int64
 
 	connectedIPs []IP
 	blockedIPs   []IP
@@ -21,8 +24,8 @@ type IP struct {
 func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
 	return &Firewall{
 		MaxConnections:     maxConnections,
-		BlockPeriod:        blockPeriod,
-		ConnectionCooldown: connectionCooldown,
+		BlockPeriod:        int64(blockPeriod * 60),
+		ConnectionCooldown: int64(connectionCooldown * 60),
 	}
 }
 
@@ -44,8 +47,8 @@ func (f *Firewall) IsConnected(ip string) bool {
 	return false
 }
 
-func (f *Firewall) Block(ip string) {
-	f.blockedIPs = append(f.blockedIPs, IP{Address: ip})
+func (f *Firewall) Block(ip ...IP) {
+	f.blockedIPs = append(f.blockedIPs, ip...)
 }
 
 func (f *Firewall) Unblock(ip string) {
@@ -62,6 +65,41 @@ func (f *Firewall) updateLastConnection(ip string) {
 		if c.Address == ip {
 			f.connectedIPs[i].LastConnection = time.Now().Unix()
 			return
+		}
+	}
+}
+
+func (f *Firewall) coolDownCheck() {
+	if f.MaxConnections == 0 {
+		return
+	}
+	var now = time.Now().Unix()
+	cs := f.connectedIPs
+	for i, c := range cs {
+		if now-c.LastConnection >= f.ConnectionCooldown {
+			f.connectedIPs = append(f.connectedIPs[:i], f.connectedIPs[i+1:]...)
+		}
+		if c.New && now-c.FirstConnection >= f.ConnectionCooldown {
+			f.connectedIPs[i].New = false
+		}
+	}
+}
+
+func (f *Firewall) blockCheck() {
+	if len(f.connectedIPs) > f.MaxConnections {
+		tb := f.connectedIPs[f.MaxConnections:]
+		f.Block(tb...)
+		log.Println("Blocked IPs:", tb)
+		f.connectedIPs = f.connectedIPs[:f.MaxConnections]
+	}
+}
+
+func (f *Firewall) unblockCheck() {
+	var now = time.Now().Unix()
+	bs := f.blockedIPs
+	for i, b := range bs {
+		if now-b.LastConnection >= f.BlockPeriod {
+			f.blockedIPs = append(f.blockedIPs[:i], f.blockedIPs[i+1:]...)
 		}
 	}
 }
