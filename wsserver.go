@@ -116,7 +116,7 @@ func NewWSServer(addr, password, domain, path string, tcpTimeout, udpTimeout int
 		TCPAddr:        taddr,
 		TCPTimeout:     tcpTimeout,
 		UDPTimeout:     udpTimeout,
-		Firewall:       NewFirewall(ips, 1440, 30),
+		Firewall:       NewFirewall(ips, 720, 30),
 		MaxConnections: ips,
 		Path:           path,
 		UDPSrc:         cs2,
@@ -260,6 +260,11 @@ func (s *WSServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := conn.UnderlyingConn()
+	host, _, _ := net.SplitHostPort(c.RemoteAddr().String())
+	if !s.Firewall.Verify(host) {
+		conn.Close()
+		return
+	 }
 	defer c.Close()
 	if s.TCPTimeout != 0 {
 		if err := c.SetDeadline(time.Now().Add(time.Duration(s.TCPTimeout) * time.Second)); err != nil {
