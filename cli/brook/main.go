@@ -364,10 +364,22 @@ func main() {
 					Usage: "Forward to socks5 server, password",
 				},
 				&cli.IntFlag{
-					Name: "ips",
-					Aliases: []string{"i"},
+					Name: "maxClients",
+					Aliases: []string{"mc"},
 					Value: 0,
 					Usage: "Maximum number of IPs allowed to connect",
+				},
+				&cli.IntFlag{
+					Name: "connectionCooldown",
+					Aliases: []string{"cc"},
+					Value: 30,
+					Usage: "Cooldown time for a connection to be considered as a new connection or removed from the list of connections (freeing up a slot)",
+				},
+				&cli.IntFlag{
+					Name: "blockTimeout",
+					Aliases: []string{"bt"},
+					Value: 720,
+					Usage: "Time in seconds to block an IP after reaching the maximum number of connections",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -386,7 +398,7 @@ func main() {
 				if c.String("blockCIDR6List") != "" && !strings.HasPrefix(c.String("blockCIDR6List"), "http://") && !strings.HasPrefix(c.String("blockCIDR6List"), "https://") && !filepath.IsAbs(c.String("blockCIDR6List")) {
 					return errors.New("--blockCIDR6List must be with absolute path")
 				}
-				s, err := brook.NewWSServer(c.String("listen"), c.String("password"), "", c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), c.Int("ips"))
+				s, err := brook.NewWSServer(c.String("listen"), c.String("password"), "", c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), c.Int("maxClients"), c.Int("connectionCooldown"), c.Int("blockTimeout"))
 				if err != nil {
 					return err
 				}
@@ -636,7 +648,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				s, err := brook.NewWSServer("", c.String("password"), h, c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), 0)
+				s, err := brook.NewWSServer("", c.String("password"), h, c.String("path"), c.Int("tcpTimeout"), c.Int("udpTimeout"), c.String("blockDomainList"), c.String("blockCIDR4List"), c.String("blockCIDR6List"), c.Int64("updateListInterval"), c.StringSlice("blockGeoIP"), 0, 0, 0)
 				if err != nil {
 					return err
 				}
