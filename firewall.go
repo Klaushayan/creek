@@ -12,6 +12,7 @@ type Firewall struct {
 
 	connectedIPs []IP
 	blockedIPs   []IP
+	interval	 *Job
 }
 
 type IP struct {
@@ -22,11 +23,24 @@ type IP struct {
 }
 
 func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
-	return &Firewall{
+
+	f := &Firewall{
 		MaxConnections:     maxConnections,
 		BlockPeriod:        int64(blockPeriod * 60),
 		ConnectionCooldown: int64(connectionCooldown * 60),
 	}
+
+	j := func() {
+		f.coolDownCheck()
+		f.blockCheck()
+		f.unblockCheck()
+	}
+
+	f.interval = NewJob(1 * time.Minute, j)
+
+	f.interval.Start()
+
+	return f
 }
 
 func (f *Firewall) IsBlocked(ip string) bool {
@@ -48,10 +62,12 @@ func (f *Firewall) IsConnected(ip string) bool {
 }
 
 func (f *Firewall) Block(ip ...IP) {
+	log.Println("Blocking IPs:", ip)
 	f.blockedIPs = append(f.blockedIPs, ip...)
 }
 
 func (f *Firewall) Unblock(ip string) {
+	log.Println("Unblocking IP:", ip)
 	for i, b := range f.blockedIPs {
 		if b.Address == ip {
 			f.blockedIPs = append(f.blockedIPs[:i], f.blockedIPs[i+1:]...)
@@ -77,9 +93,10 @@ func (f *Firewall) coolDownCheck() {
 	cs := f.connectedIPs
 	for i, c := range cs {
 		if now-c.LastConnection >= f.ConnectionCooldown {
+			log.Println("Removing IP from connected IPs:", c.Address)
 			f.connectedIPs = append(f.connectedIPs[:i], f.connectedIPs[i+1:]...)
-		}
-		if c.New && now-c.FirstConnection >= f.ConnectionCooldown {
+		} else if c.New && now-c.FirstConnection >= f.ConnectionCooldown {
+			log.Println("IP is no longer new:", c.Address)
 			f.connectedIPs[i].New = false
 		}
 	}
@@ -105,19 +122,20 @@ func (f *Firewall) unblockCheck() {
 }
 
 func (f *Firewall) Verify(ip string) bool {
+	log.Println("Firewall:", ip)
 	if f.MaxConnections == 0 {
 		return true
 	}
-	if len(f.connectedIPs) >= f.MaxConnections {
-		return false
-	}
 	if f.IsBlocked(ip) {
+		log.Println("IP is blocked:", ip)
 		return false
 	}
 	if f.IsConnected(ip) {
+		log.Println("IP is connected:", ip)
 		f.updateLastConnection(ip)
 		return true
 	}
+	log.Println("IP is new:", ip)
 	f.connectedIPs = append(f.connectedIPs, IP{Address: ip, FirstConnection: time.Now().Unix(), New: true})
 	return true
 }
