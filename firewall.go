@@ -176,5 +176,5 @@ func (f *Firewall) log(s ...string) {
 	for _, str := range s {
 		sb.WriteString(str)
 	}
-	f.logChan <- sb.String()
+	f.logFile.PingChan <- sb.String()
 }
