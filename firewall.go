@@ -16,7 +16,6 @@ type Firewall struct {
 	blockedIPs   []IP
 	interval	 *Job
 	logFile   	 *Job
-	logChan chan string
 }
 
 type IP struct {
@@ -58,9 +57,9 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 		ConnectionCooldown: int64(connectionCooldown * 60),
 	}
 
-	f.logFile.PingChan = make(chan string, 100)
 	lf := log.New(o, "", log.Ldate|log.Ltime|log.Lshortfile)
 	f.logFile = NewJobWithArgument(lf.Println)
+	f.logFile.PingChan = make(chan string, 100)
 
 	j := func() {
 		f.coolDownCheck()
@@ -72,6 +71,8 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 
 	f.interval.StartWithTicker(1 * time.Minute)
 	f.logFile.StartWithArgument()
+
+	f.log("Firewall started")
 
 	return f
 }
