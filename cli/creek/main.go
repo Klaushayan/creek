@@ -38,7 +38,7 @@ import (
 	_ "net/http/pprof"
 	"net/url"
 
-	"github.com/txthinking/brook"
+	"github.com/klaushayan/creek"
 	"github.com/txthinking/runnergroup"
 	"github.com/txthinking/socks5"
 	"github.com/urfave/cli/v2"
@@ -49,16 +49,20 @@ var debugAddress string
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "Brook"
-	app.Version = "20221212"
+	app.Name = "Creek"
+	app.Version = "0.1"
 	app.Usage = "A cross-platform network tool designed for developers"
 	app.Authors = []*cli.Author{
 		{
 			Name:  "Cloud",
 			Email: "cloud@txthinking.com",
 		},
+		{
+			Name:  "Shayan",
+			Email: "klaushayan@gmail.com",
+		},
 	}
-	app.Copyright = "https://github.com/txthinking/brook"
+	app.Copyright = "https://github.com/klaushayan/creek"
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{
 			Name:        "debug",

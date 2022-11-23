@@ -21,7 +21,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/txthinking/brook/limits"
+	"github.com/klaushayan/creek/limits"
 	"golang.org/x/net/proxy"
 )
 

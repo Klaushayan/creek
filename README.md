@@ -1,6 +1,6 @@
-# Better-Brook
+# Creek
 
-Brook is a cross-platform network tool designed for developers. Better-Brook on the other hand is a fork of Brook that is designed for experienced users. The aim is to provide a more user-friendly interface and a way to easily manage multiple Brook instances and clients.
+[Brook](https://github.com/txthinking/brook) is a cross-platform network tool designed for developers. Creek on the other hand is based on brook (fully compatible), but it offers more features. The aim is to provide a more user-friendly interface and a way to easily manage multiple Brook instances and clients.
 
 ## Installation
 
@@ -11,22 +11,24 @@ First, you need to have the Go compiler installed. You can download it and insta
 Once you have Go installed, you can build the project as easily as running the following commands:
 
 ```bash
-git clone https://github.com/Klaushayan/better-brook
-cd better-brook/cli/brook
+git clone https://github.com/Klaushayan/creek
+cd creek/cli/creek
 go build .
 ```
 
-And a binary named `brook` will be created in the `cli/brook` directory.
+And a binary named `creek` will be created in the `cli/creek` directory.
 
 ## Server
 
 Both the server and the client work the same way they do in the original Brook. The only difference is that a few options have been added.
 
 ```
-brook server -l :9999 -p hello
+creek server -l :9999 -p hello
 ```
 
 ## Client
+
+Creek servers are completely compatible with Brook clients.
 
 [GUI Client](https://txthinking.github.io/brook/)
 
@@ -39,7 +41,16 @@ brook server -l :9999 -p hello
 
 > create socks5://127.0.0.1:1080
 
-`brook client -s 1.2.3.4:9999 -p hello`
+`creek client -s 1.2.3.4:9999 -p hello`
+
+## Roadmap
+
+-   [x] Limit the number of IP addresses that can connect to the server
+-   [x] Block IP addresses
+-   [ ] Logging into a file
+-   [ ] An API for managing the server
+-   [ ] Session management to manage multiple instances of the server
+-   [ ] Web panel for easier configuration, management and monitoring
 
 ## Documentation
 

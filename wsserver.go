@@ -29,7 +29,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	cache "github.com/patrickmn/go-cache"
-	"github.com/txthinking/brook/limits"
+	"github.com/klaushayan/creek/limits"
 	crypto1 "github.com/txthinking/crypto"
 	"github.com/txthinking/socks5"
 	"github.com/urfave/negroni"

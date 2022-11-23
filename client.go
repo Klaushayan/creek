@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/txthinking/brook/limits"
+	"github.com/klaushayan/creek/limits"
 	"github.com/txthinking/socks5"
 )
 
