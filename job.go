@@ -1,14 +1,18 @@
 package brook
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type Job struct {
-	JobChan chan func()
+	JobChan  chan func()
 	PingChan chan string
-	Quit    chan struct{}
-	ticker  *time.Ticker
-	job     func()
-	jobArg  func(string)
+	Quit     chan struct{}
+	Started  bool
+	ticker   *time.Ticker
+	job      func()
+	jobArg   func(string)
 }
 
 func NewJob(job func()) *Job {
@@ -20,13 +24,16 @@ func NewJob(job func()) *Job {
 
 func NewJobWithArgument(job func(string)) *Job {
 	return &Job{
-		Quit: make(chan struct{}),
-		jobArg:  job,
+		Quit:   make(chan struct{}),
+		jobArg: job,
 	}
 }
 
 /* Uses a ticker as the job channel based on the interval */
-func (j *Job) StartWithTicker(interval time.Duration) {
+func (j *Job) StartWithTicker(interval time.Duration) error {
+	if j.Started {
+		return startError()
+	}
 	j.ticker = time.NewTicker(interval)
 	go func() {
 		for {
@@ -40,10 +47,15 @@ func (j *Job) StartWithTicker(interval time.Duration) {
 			}
 		}
 	}()
+	j.Started = true
+	return nil
 }
 
 /* Uses a func channel as the job channel and does not use the job function given in the constructor*/
-func (j *Job) StartWithChannel() {
+func (j *Job) StartWithChannel() error {
+	if j.Started {
+		return startError()
+	}
 	go func() {
 		for {
 			select {
@@ -54,10 +66,15 @@ func (j *Job) StartWithChannel() {
 			}
 		}
 	}()
+	j.Started = true
+	return nil
 }
 
 /* Uses a string channel to get strings and executes the job function given in the constructor with the string value in the channel*/
-func (j *Job) StartWithArgument() {
+func (j *Job) StartWithArgument() error {
+	if j.Started {
+		return startError()
+	}
 	go func() {
 		for {
 			select {
@@ -68,10 +85,15 @@ func (j *Job) StartWithArgument() {
 			}
 		}
 	}()
+	j.Started = true
+	return nil
 }
 
 /* Uses a string channel to get pinged and executes the job function given in the constructor*/
-func (j *Job) Start() {
+func (j *Job) Start() error {
+	if j.Started {
+		return startError()
+	}
 	go func() {
 		for {
 			select {
@@ -82,9 +104,24 @@ func (j *Job) Start() {
 			}
 		}
 	}()
+	j.Started = true
+	return nil
 }
 
 /* This stops all jobs */
-func (j *Job) Stop() {
+func (j *Job) Stop() error {
+	if !j.Started {
+		return stopError()
+	}
 	close(j.Quit)
+	j.Started = false
+	return nil
+}
+
+func startError() error {
+	return errors.New("ERROR: Job already started")
+}
+
+func stopError() error {
+	return errors.New("ERROR: Job already stopped")
 }
