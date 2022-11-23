@@ -27,8 +27,8 @@ import (
 	"time"
 
 	cache "github.com/patrickmn/go-cache"
-	"github.com/txthinking/brook/limits"
-	"github.com/txthinking/brook/tproxy"
+	"github.com/txthinking/creek/limits"
+	"github.com/txthinking/creek/tproxy"
 	"github.com/txthinking/runnergroup"
 	"github.com/txthinking/socks5"
 )
