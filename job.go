@@ -8,12 +8,20 @@ type Job struct {
 	Quit    chan struct{}
 	ticker  *time.Ticker
 	job     func()
+	jobArg  func(string)
 }
 
 func NewJob(job func()) *Job {
 	return &Job{
 		Quit: make(chan struct{}),
 		job:  job,
+	}
+}
+
+func NewJobWithArgument(job func(string)) *Job {
+	return &Job{
+		Quit: make(chan struct{}),
+		jobArg:  job,
 	}
 }
 
@@ -48,6 +56,20 @@ func (j *Job) StartWithChannel() {
 	}()
 }
 
+/* Uses a string channel to get strings and executes the job function given in the constructor with the string value in the channel*/
+func (j *Job) StartWithArgument() {
+	go func() {
+		for {
+			select {
+			case s := <-j.PingChan:
+				j.jobArg(s)
+			case <-j.Quit:
+				return
+			}
+		}
+	}()
+}
+
 /* Uses a string channel to get pinged and executes the job function given in the constructor*/
 func (j *Job) Start() {
 	go func() {
@@ -56,7 +78,6 @@ func (j *Job) Start() {
 			case <-j.PingChan:
 				j.job()
 			case <-j.Quit:
-				j.ticker.Stop()
 				return
 			}
 		}
