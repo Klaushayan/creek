@@ -69,8 +69,15 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 
 	f.interval = NewJob(j)
 
-	f.interval.StartWithTicker(1 * time.Minute)
-	f.logFile.StartWithArgument()
+	err = f.interval.StartWithTicker(1 * time.Minute)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = f.logFile.StartWithArgument()
+	if err != nil {
+		log.Println(err)
+	}
 
 	f.log("Firewall started")
 
