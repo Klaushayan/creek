@@ -12,7 +12,7 @@ type Job struct {
 	Started  bool
 	ticker   *time.Ticker
 	job      func()
-	jobArg   func(string)
+	jobArg   func(...any)
 }
 
 func NewJob(job func()) *Job {
@@ -22,7 +22,7 @@ func NewJob(job func()) *Job {
 	}
 }
 
-func NewJobWithArgument(job func(string)) *Job {
+func NewJobWithArgument(job func(...any)) *Job {
 	return &Job{
 		Quit:   make(chan struct{}),
 		jobArg: job,
