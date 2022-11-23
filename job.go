@@ -3,26 +3,30 @@ package brook
 import "time"
 
 type Job struct {
-	ticker *time.Ticker
-	quit   chan struct{}
-	job    func()
+	JobChan chan func()
+	PingChan chan string
+	Quit    chan struct{}
+	ticker  *time.Ticker
+	job     func()
 }
 
-func NewJob(interval time.Duration, job func()) *Job {
+func NewJob(job func()) *Job {
 	return &Job{
-		ticker: time.NewTicker(interval),
-		quit:   make(chan struct{}),
-		job:    job,
+		Quit: make(chan struct{}),
+		job:  job,
 	}
 }
 
-func (j *Job) Start() {
+/* Uses a ticker as the job channel based on the interval */
+func (j *Job) StartWithTicker(interval time.Duration) {
+	j.ticker = time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-j.ticker.C:
 				j.job()
-			case <-j.quit:
+			case <-j.Quit:
+				// Not thread safe
 				j.ticker.Stop()
 				return
 			}
@@ -30,6 +34,36 @@ func (j *Job) Start() {
 	}()
 }
 
+/* Uses a func channel as the job channel and does not use the job function given in the constructor*/
+func (j *Job) StartWithChannel() {
+	go func() {
+		for {
+			select {
+			case job := <-j.JobChan:
+				job()
+			case <-j.Quit:
+				return
+			}
+		}
+	}()
+}
+
+/* Uses a string channel to get pinged and executes the job function given in the constructor*/
+func (j *Job) Start() {
+	go func() {
+		for {
+			select {
+			case <-j.PingChan:
+				j.job()
+			case <-j.Quit:
+				j.ticker.Stop()
+				return
+			}
+		}
+	}()
+}
+
+/* This stops all jobs */
 func (j *Job) Stop() {
-	close(j.quit)
+	close(j.Quit)
 }
