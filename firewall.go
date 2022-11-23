@@ -2,6 +2,8 @@ package brook
 
 import (
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -13,6 +15,8 @@ type Firewall struct {
 	connectedIPs []IP
 	blockedIPs   []IP
 	interval	 *Job
+	logFile   	 *Job
+	logChan chan string
 }
 
 type IP struct {
@@ -22,7 +26,31 @@ type IP struct {
 	LastConnection  int64
 }
 
+type IPList []IP
+
+func (ip IP) String() string {
+	return ip.Address
+}
+
+func (ips IPList) String() string {
+	var sb strings.Builder
+	for _, ip := range ips {
+		sb.WriteString(ip.Address)
+		sb.WriteString(", ")
+	}
+	return sb.String()
+}
+
 func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
+
+	o, err := os.OpenFile("creek.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+
+	if err != nil {
+		log.Printf("Failed to open log file: %v", err)
+		o = os.Stdout
+	}
+
+	defer o.Close()
 
 	f := &Firewall{
 		MaxConnections:     maxConnections,
@@ -30,15 +58,20 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 		ConnectionCooldown: int64(connectionCooldown * 60),
 	}
 
+	f.logChan = make(chan string, 100)
+	lf := log.New(o, "", log.Ldate|log.Ltime|log.Lshortfile)
+	f.logFile = NewJobWithArgument(lf.Println)
+
 	j := func() {
 		f.coolDownCheck()
 		f.blockCheck()
 		f.unblockCheck()
 	}
 
-	f.interval = NewJob(1 * time.Minute, j)
+	f.interval = NewJob(j)
 
-	f.interval.Start()
+	f.interval.StartWithTicker(1 * time.Minute)
+	f.logFile.StartWithArgument()
 
 	return f
 }
@@ -62,12 +95,12 @@ func (f *Firewall) IsConnected(ip string) bool {
 }
 
 func (f *Firewall) Block(ip ...IP) {
-	log.Println("Blocking IPs:", ip)
+	f.log("Blocking IPs:", IPList(ip).String())
 	f.blockedIPs = append(f.blockedIPs, ip...)
 }
 
 func (f *Firewall) Unblock(ip string) {
-	log.Println("Unblocking IP:", ip)
+	f.log("Unblocking IP:", ip)
 	for i, b := range f.blockedIPs {
 		if b.Address == ip {
 			f.blockedIPs = append(f.blockedIPs[:i], f.blockedIPs[i+1:]...)
@@ -93,10 +126,10 @@ func (f *Firewall) coolDownCheck() {
 	cs := f.connectedIPs
 	for i, c := range cs {
 		if now-c.LastConnection >= f.ConnectionCooldown {
-			log.Println("Removing IP from connected IPs:", c.Address)
+			f.log("Removing IP from connected IPs:", c.Address)
 			f.connectedIPs = append(f.connectedIPs[:i], f.connectedIPs[i+1:]...)
 		} else if c.New && now-c.FirstConnection >= f.ConnectionCooldown {
-			log.Println("IP is no longer new:", c.Address)
+			f.log("IP is no longer new:", c.Address)
 			f.connectedIPs[i].New = false
 		}
 	}
@@ -106,7 +139,6 @@ func (f *Firewall) blockCheck() {
 	if len(f.connectedIPs) > f.MaxConnections {
 		tb := f.connectedIPs[f.MaxConnections:]
 		f.Block(tb...)
-		log.Println("Blocked IPs:", tb)
 		f.connectedIPs = f.connectedIPs[:f.MaxConnections]
 	}
 }
@@ -122,20 +154,27 @@ func (f *Firewall) unblockCheck() {
 }
 
 func (f *Firewall) Verify(ip string) bool {
-	log.Println("Firewall:", ip)
 	if f.MaxConnections == 0 {
 		return true
 	}
 	if f.IsBlocked(ip) {
-		log.Println("IP is blocked:", ip)
+		f.log("IP is blocked:", ip)
 		return false
 	}
 	if f.IsConnected(ip) {
-		log.Println("IP is connected:", ip)
+		f.log("IP is connected:", ip)
 		f.updateLastConnection(ip)
 		return true
 	}
-	log.Println("IP is new:", ip)
+	f.log("IP is new:", ip)
 	f.connectedIPs = append(f.connectedIPs, IP{Address: ip, FirstConnection: time.Now().Unix(), New: true})
 	return true
+}
+
+func (f *Firewall) log(s ...string) {
+	var sb strings.Builder
+	for _, str := range s {
+		sb.WriteString(str)
+	}
+	f.logChan <- sb.String()
 }
