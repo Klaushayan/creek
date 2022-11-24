@@ -15,7 +15,8 @@ type Firewall struct {
 	connectedIPs []IP
 	blockedIPs   []IP
 	interval	 *Job
-	logFile   	 *Job
+	logHandler   *Job
+	logFile		 *os.File
 }
 
 type IP struct {
@@ -49,7 +50,8 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 		o = os.Stdout
 	}
 
-	defer o.Close()
+	// TODO: Add a way to close the log file
+	// defer o.Close()
 
 	f := &Firewall{
 		MaxConnections:     maxConnections,
@@ -58,8 +60,8 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 	}
 
 	lf := log.New(o, "", log.Ldate|log.Ltime|log.Lshortfile)
-	f.logFile = NewJobWithArgument(lf.Println)
-	f.logFile.PingChan = make(chan string, 100)
+	f.logHandler = NewJobWithArgument(lf.Println)
+	f.logHandler.PingChan = make(chan string, 100)
 
 	j := func() {
 		f.coolDownCheck()
@@ -74,7 +76,7 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 		log.Println(err)
 	}
 
-	err = f.logFile.StartWithArgument()
+	err = f.logHandler.StartWithArgument()
 	if err != nil {
 		log.Println(err)
 	}
@@ -184,5 +186,5 @@ func (f *Firewall) log(s ...string) {
 	for _, str := range s {
 		sb.WriteString(str)
 	}
-	f.logFile.PingChan <- sb.String()
+	f.logHandler.PingChan <- sb.String()
 }
