@@ -16,14 +16,13 @@ type Firewall struct {
 	blockedIPs   []IP
 	interval	 *Job
 	logJob   	 *Job
-	logFile		 *os.File
 }
 
 type IP struct {
-	Address         string
-	New             bool
-	FirstConnection int64
-	LastConnection  int64
+	Address         string `json:"address"`
+	New             bool  `json:"new"`
+	FirstConnection int64 `json:"first_connection"`
+	LastConnection  int64 `json:"last_connection"`
 }
 
 type IPList []IP
