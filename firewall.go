@@ -40,6 +40,15 @@ func (ips IPList) String() string {
 	return sb.String()
 }
 
+func NewIP(s string) IP {
+	return IP {
+		Address:         s,
+		New:             true,
+		FirstConnection: time.Now().Unix(),
+		LastConnection:  time.Now().Unix(),
+	}
+}
+
 func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
 	f := &Firewall{
 		MaxConnections:     maxConnections,
@@ -164,7 +173,7 @@ func (f *Firewall) Verify(ip string) bool {
 		return true
 	}
 	f.log("IP is new:", ip)
-	f.connectedIPs = append(f.connectedIPs, IP{Address: ip, FirstConnection: time.Now().Unix(), New: true})
+	f.connectedIPs = append(f.connectedIPs, NewIP(ip))
 	return true
 }
 
