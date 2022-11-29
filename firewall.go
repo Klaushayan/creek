@@ -15,7 +15,7 @@ type Firewall struct {
 	connectedIPs []IP
 	blockedIPs   []IP
 	interval	 *Job
-	logHandler   *Job
+	logJob   	 *Job
 	logFile		 *os.File
 }
 
@@ -42,26 +42,14 @@ func (ips IPList) String() string {
 }
 
 func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall {
-
-	o, err := os.OpenFile("creek.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-
-	if err != nil {
-		log.Printf("Failed to open log file: %v", err)
-		o = os.Stdout
-	}
-
-	// TODO: Add a way to close the log file
-	// defer o.Close()
-
 	f := &Firewall{
 		MaxConnections:     maxConnections,
 		BlockPeriod:        int64(blockPeriod * 60),
 		ConnectionCooldown: int64(connectionCooldown * 60),
 	}
 
-	lf := log.New(o, "", log.Ldate|log.Ltime|log.Lshortfile)
-	f.logHandler = NewJobWithArgument(lf.Println)
-	f.logHandler.PingChan = make(chan string, 100)
+	f.logJob = NewJobWithArgument(f.logHandler)
+	f.logJob.PingChan = make(chan string, 100)
 
 	j := func() {
 		f.coolDownCheck()
@@ -71,12 +59,12 @@ func NewFirewall(maxConnections, blockPeriod, connectionCooldown int) *Firewall 
 
 	f.interval = NewJob(j)
 
-	err = f.interval.StartWithTicker(1 * time.Minute)
+	err := f.interval.StartWithTicker(1 * time.Minute)
 	if err != nil {
 		log.Println(err)
 	}
 
-	err = f.logHandler.StartWithArgument()
+	err = f.logJob.StartWithArgument()
 	if err != nil {
 		log.Println(err)
 	}
@@ -186,5 +174,22 @@ func (f *Firewall) log(s ...string) {
 	for _, str := range s {
 		sb.WriteString(str)
 	}
-	f.logHandler.PingChan <- sb.String()
+	f.logJob.PingChan <- sb.String()
+}
+
+func (f *Firewall) logHandler(s ...any) {
+
+	o, err := os.OpenFile("creek.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+
+	if err != nil {
+		log.Printf("Failed to open log file: %v", err)
+		o = os.Stdout
+	}
+
+	defer o.Close()
+
+	lf := log.New(o, "", log.Ldate|log.Ltime|log.Lshortfile)
+
+	lf.Println(s...)
+
 }
